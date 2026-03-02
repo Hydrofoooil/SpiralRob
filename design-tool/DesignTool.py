@@ -462,7 +462,7 @@ class MainWindow(QMainWindow):
         form_2d.setHorizontalSpacing(8)
         row = 0
         self.a_spin, self.a_slider, row = self._add_double_control(
-            form_2d, row, "a", "(mm)", 0.1, 20.0, 0.01, 4, self.params.a, scale=1000
+            form_2d, row, "a", "(mm)", 0.1, 100.0, 0.01, 4, self.params.a, scale=1000
         )
         self.b_spin, self.b_slider, row = self._add_double_control(
             form_2d, row, "b", "", 0.01, 0.35, 0.001, 4, self.params.b, scale=10000
