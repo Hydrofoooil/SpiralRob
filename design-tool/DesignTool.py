@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QGridLayout,
     QHBoxLayout,
+    QCheckBox,
     QLabel,
     QMainWindow,
     QPushButton,
@@ -73,6 +74,9 @@ class Params:
     sim_stiffness: float = 0.5
     sim_damping: float = 0.2
     two_cable: bool = True
+    cable3_cut_enabled: bool = True
+    cable3_cut_pos: float = 15.0
+    cable3_cut_size: float = 10.0
 
 
 class ToggleSwitch(QWidget):
@@ -562,10 +566,14 @@ class MainWindow(QMainWindow):
         cable_row = QHBoxLayout()
         cable_row.setContentsMargins(0, 0, 0, 0)
         cable_row.setSpacing(8)
-        self.cable_toggle = ToggleSwitch(self.params.two_cable, on_color="#2f6fb8", off_color="#2fb86f")
-        self.cable_label = QLabel("2-cable")
-        cable_row.addWidget(self.cable_toggle)
-        cable_row.addWidget(self.cable_label)
+        self.cable_mode_title = QLabel("Num of Cables")
+        self.cable2_check = QCheckBox("2")
+        self.cable3_check = QCheckBox("3")
+        self.cable2_check.setChecked(self.params.two_cable)
+        self.cable3_check.setChecked(not self.params.two_cable)
+        cable_row.addWidget(self.cable_mode_title)
+        cable_row.addWidget(self.cable2_check)
+        cable_row.addWidget(self.cable3_check)
         cable_row.addStretch(1)
         cable_wrap = QWidget()
         cable_wrap.setLayout(cable_row)
@@ -616,6 +624,51 @@ class MainWindow(QMainWindow):
         form_3d.addWidget(self.cable2_wrap, row, 0, 1, 3)
         row += 1
 
+        self.cable3_wrap = QWidget()
+        cable3_layout = QGridLayout(self.cable3_wrap)
+        cable3_layout.setContentsMargins(0, 0, 0, 0)
+        cable3_layout.setHorizontalSpacing(8)
+        cable3_row_idx = 0
+        self.cable3_cut_check = QCheckBox("Enable 3-cable Cut")
+        self.cable3_cut_check.setChecked(self.params.cable3_cut_enabled)
+        cable3_layout.addWidget(self.cable3_cut_check, cable3_row_idx, 0, 1, 3)
+        cable3_row_idx += 1
+
+        self.cable3_cut_params_wrap = QWidget()
+        cable3_cut_params_layout = QGridLayout(self.cable3_cut_params_wrap)
+        cable3_cut_params_layout.setContentsMargins(0, 0, 0, 0)
+        cable3_cut_params_layout.setHorizontalSpacing(8)
+        cable3_cut_row = 0
+        self.cable3_cut_pos_spin, self.cable3_cut_pos_slider, cable3_cut_row = self._add_double_control(
+            cable3_cut_params_layout,
+            cable3_cut_row,
+            "Cut Position",
+            "(%)",
+            0.0,
+            50.0,
+            1.0,
+            1,
+            self.params.cable3_cut_pos,
+            scale=10,
+        )
+        self.cable3_cut_size_spin, self.cable3_cut_size_slider, cable3_cut_row = self._add_double_control(
+            cable3_cut_params_layout,
+            cable3_cut_row,
+            "Cut Size",
+            "(%)",
+            0.0,
+            20.0,
+            0.1,
+            2,
+            self.params.cable3_cut_size,
+            scale=10,
+        )
+        cable3_layout.addWidget(self.cable3_cut_params_wrap, cable3_row_idx, 0, 1, 3)
+        cable3_row_idx += 1
+
+        form_3d.addWidget(self.cable3_wrap, row, 0, 1, 3)
+        row += 1
+
         panel_layout.addLayout(form_3d)
 
         label_sim = QLabel("Simulation Parameters")
@@ -636,7 +689,7 @@ class MainWindow(QMainWindow):
             0.01,
             3,
             self.params.sim_stiffness,
-            scale=1000,
+            scale=10,
         )
         self.sim_damping_spin, self.sim_damping_slider, sim_row = self._add_double_control(
             form_sim,
@@ -648,7 +701,7 @@ class MainWindow(QMainWindow):
             0.01,
             3,
             self.params.sim_damping,
-            scale=1000,
+            scale=10,
         )
         panel_layout.addLayout(form_sim)
 
@@ -716,8 +769,10 @@ class MainWindow(QMainWindow):
         self.export_cad_btn.clicked.connect(self.export_cad)
         self.export_xml_btn.clicked.connect(self.export_xml)
         self.reset_view_btn.clicked.connect(self.reset_view)
-        self.cable_toggle.toggled.connect(self._on_cable_toggle)
-        self._on_cable_toggle(self.cable_toggle.isChecked())
+        self.cable2_check.toggled.connect(self._on_cable2_checked)
+        self.cable3_check.toggled.connect(self._on_cable3_checked)
+        self.cable3_cut_check.toggled.connect(self._on_cable3_cut_toggled)
+        self._on_cable_toggle(self.cable2_check.isChecked())
         for w in (
             self.a_spin,
             self.b_spin,
@@ -728,6 +783,8 @@ class MainWindow(QMainWindow):
             self.extrusion_spin,
             self.cone1_spin,
             self.cone2_spin,
+            self.cable3_cut_pos_spin,
+            self.cable3_cut_size_spin,
             self.tip_hole_pos_spin,
             self.tip_hole_size_spin,
             self.base_hole_pos_spin,
@@ -741,6 +798,8 @@ class MainWindow(QMainWindow):
             self.extrusion_slider,
             self.cone1_slider,
             self.cone2_slider,
+            self.cable3_cut_pos_slider,
+            self.cable3_cut_size_slider,
             self.tip_hole_pos_slider,
             self.tip_hole_size_slider,
             self.base_hole_pos_slider,
@@ -790,10 +849,40 @@ class MainWindow(QMainWindow):
         self._update_cone1_range()
         self._update_cone2_range()
 
+    def _on_cable2_checked(self, checked: bool) -> None:
+        if checked:
+            if self.cable3_check.isChecked():
+                self.cable3_check.blockSignals(True)
+                self.cable3_check.setChecked(False)
+                self.cable3_check.blockSignals(False)
+            self._on_cable_toggle(True)
+        elif not self.cable3_check.isChecked():
+            self.cable2_check.blockSignals(True)
+            self.cable2_check.setChecked(True)
+            self.cable2_check.blockSignals(False)
+
+    def _on_cable3_checked(self, checked: bool) -> None:
+        if checked:
+            if self.cable2_check.isChecked():
+                self.cable2_check.blockSignals(True)
+                self.cable2_check.setChecked(False)
+                self.cable2_check.blockSignals(False)
+            self._on_cable_toggle(False)
+        elif not self.cable2_check.isChecked():
+            self.cable3_check.blockSignals(True)
+            self.cable3_check.setChecked(True)
+            self.cable3_check.blockSignals(False)
+
+    def _on_cable3_cut_toggled(self, checked: bool) -> None:
+        self.params.cable3_cut_enabled = bool(checked)
+        self.cable3_cut_params_wrap.setVisible((not self.params.two_cable) and bool(checked))
+        self.schedule_update()
+
     def _on_cable_toggle(self, checked: bool) -> None:
         self.params.two_cable = bool(checked)
-        self.cable_label.setText("2-cable" if checked else "3-cable")
         self.cable2_wrap.setVisible(checked)
+        self.cable3_wrap.setVisible(not checked)
+        self.cable3_cut_params_wrap.setVisible((not checked) and self.cable3_cut_check.isChecked())
         self.update_scene()
 
     def _on_splitter_moved(self, *_args) -> None:
@@ -918,7 +1007,11 @@ class MainWindow(QMainWindow):
         self.p_spin.setValue(defaults.p)
         self.elastic_spin.setValue(defaults.elastic_percent)
         self.elastic_check.setChecked(defaults.elastic_enabled)
-        self.cable_toggle.setChecked(defaults.two_cable)
+        self.cable2_check.setChecked(defaults.two_cable)
+        self.cable3_check.setChecked(not defaults.two_cable)
+        self.cable3_cut_check.setChecked(defaults.cable3_cut_enabled)
+        self.cable3_cut_pos_spin.setValue(defaults.cable3_cut_pos)
+        self.cable3_cut_size_spin.setValue(defaults.cable3_cut_size)
         self.cone1_spin.setValue(defaults.cone_angle1)
         self.cone1_slider.setValue(int(defaults.cone_angle1 * 10))
         self.cone2_spin.setValue(defaults.cone_angle2)
@@ -931,7 +1024,7 @@ class MainWindow(QMainWindow):
         self.sim_stiffness_slider.setValue(int(defaults.sim_stiffness * 1000))
         self.sim_damping_spin.setValue(defaults.sim_damping)
         self.sim_damping_slider.setValue(int(defaults.sim_damping * 1000))
-        self._on_cable_toggle(self.cable_toggle.isChecked())
+        self._on_cable_toggle(self.cable2_check.isChecked())
         self.update_2d()
         # re-apply cone1 defaults after update_2d range init
         self.cone1_spin.setValue(defaults.cone_angle1)
@@ -951,6 +1044,9 @@ class MainWindow(QMainWindow):
         self.params.tip_hole_size = float(self.tip_hole_size_spin.value())
         self.params.base_hole_pos = float(self.base_hole_pos_spin.value()) / 100.0
         self.params.base_hole_size = float(self.base_hole_size_spin.value())
+        self.params.cable3_cut_enabled = self.cable3_cut_check.isChecked()
+        self.params.cable3_cut_pos = float(self.cable3_cut_pos_spin.value())
+        self.params.cable3_cut_size = float(self.cable3_cut_size_spin.value())
 
         turns = max(0.1, self.params.theta_max_pi / 2.0)
         theta_vals, r_vals, rc_vals, units_primary, units_mirror, unit_count = _build_polar_units(
@@ -1182,6 +1278,38 @@ class MainWindow(QMainWindow):
         pair_xz = pair_xy.union(rect_xz)
         return pair_xz
 
+    def _build_cable3_cut_solid(self):
+        if self.params.two_cable:
+            return None
+        if not self.params.cable3_cut_enabled:
+            return None
+        try:
+            import cadquery as cq
+        except Exception:
+            return None
+        if self._robot_length <= 1e-6:
+            return None
+
+        # Percent slider -> ratio.
+        a1 = max(0.0, min(0.5, float(self.cable3_cut_pos_spin.value()) / 100.0))
+
+        # Cut band starts from the lower edge and uses a1 as ratio.
+        p0 = (0.0, -(1.0 - a1) * self._tip_size * 0.5)
+        p1 = (self._robot_length, -(1.0 - a1) * self._base_size * 0.5)
+        p2 = (self._robot_length, -self._base_size)
+        p3 = (0.0, -self._tip_size)
+        poly = [p0, p1, p2, p3]
+
+        cut_depth = max(0.1, 2.0 * self._base_size)
+        base_cut = cq.Workplane("XY").polyline(poly).close().extrude(cut_depth, both=True)
+
+        # Circular array around X-axis: 3 instances, 120 deg apart.
+        cuts = None
+        for ang in (0.0, 120.0, 240.0):
+            inst = base_cut if ang == 0.0 else base_cut.rotate((0, 0, 0), (1, 0, 0), ang)
+            cuts = inst if cuts is None else cuts.union(inst)
+        return cuts
+
     def update_scene(self) -> None:
         # Heavy 3D rebuild on demand
         self._ensure_vtk_ready()
@@ -1370,6 +1498,7 @@ class MainWindow(QMainWindow):
             c_actor.GetProperty().SetEdgeColor(0.8, 0.7, 0.2)
             c_actor.GetProperty().BackfaceCullingOff()
             self.renderer.AddActor(c_actor)
+
 
         self.renderer.AddActor(self._axes_actor)
         if not self._camera_initialized:
@@ -1993,6 +2122,12 @@ class MainWindow(QMainWindow):
                 if elastic is not None:
                     elastic = elastic.cut(holes)
 
+
+        cable3_cut = self._build_cable3_cut_solid()
+        if cable3_cut is not None:
+            main = main.cut(cable3_cut)
+            if elastic is not None:
+                elastic = elastic.cut(cable3_cut)
         return (main, elastic)
 
 
@@ -2015,3 +2150,11 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
