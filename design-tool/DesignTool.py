@@ -75,8 +75,8 @@ class Params:
     sim_damping: float = 0.2
     two_cable: bool = True
     cable3_cut_enabled: bool = True
-    cable3_cut_pos: float = 15.0
-    cable3_cut_size: float = 10.0
+    cable3_cut_pos: float = 25.0
+    cable3_cut_size: float = 18.0
 
 
 class ToggleSwitch(QWidget):
@@ -642,8 +642,8 @@ class MainWindow(QMainWindow):
         self.cable3_cut_pos_spin, self.cable3_cut_pos_slider, cable3_cut_row = self._add_double_control(
             cable3_cut_params_layout,
             cable3_cut_row,
-            "Cut Position",
-            "(%)",
+            "Cut Position (%)",
+            "",
             0.0,
             50.0,
             1.0,
@@ -654,8 +654,8 @@ class MainWindow(QMainWindow):
         self.cable3_cut_size_spin, self.cable3_cut_size_slider, cable3_cut_row = self._add_double_control(
             cable3_cut_params_layout,
             cable3_cut_row,
-            "Cut Size",
-            "(%)",
+            "Cut Size (%)",
+            "",
             0.0,
             20.0,
             0.1,
@@ -1278,37 +1278,85 @@ class MainWindow(QMainWindow):
         pair_xz = pair_xy.union(rect_xz)
         return pair_xz
 
-    def _build_cable3_cut_solid(self):
-        if self.params.two_cable:
-            return None
-        if not self.params.cable3_cut_enabled:
+    def _build_cable3_extrude_cut_solid(self):
+        if self.params.two_cable or (not self.params.cable3_cut_enabled) or self._robot_length <= 1e-6:
             return None
         try:
             import cadquery as cq
         except Exception:
             return None
-        if self._robot_length <= 1e-6:
-            return None
 
-        # Percent slider -> ratio.
-        a1 = max(0.0, min(0.5, float(self.cable3_cut_pos_spin.value()) / 100.0))
-
-        # Cut band starts from the lower edge and uses a1 as ratio.
+        # a1 is Cut Position(%) ratio: controls extrude-cut location.
+        a1 = max(0.0, min(0.50, float(self.cable3_cut_pos_spin.value()) / 100.0))
         p0 = (0.0, -(1.0 - a1) * self._tip_size * 0.5)
         p1 = (self._robot_length, -(1.0 - a1) * self._base_size * 0.5)
         p2 = (self._robot_length, -self._base_size)
         p3 = (0.0, -self._tip_size)
-        poly = [p0, p1, p2, p3]
 
         cut_depth = max(0.1, 2.0 * self._base_size)
-        base_cut = cq.Workplane("XY").polyline(poly).close().extrude(cut_depth, both=True)
+        base_cut = cq.Workplane("XY").polyline([p0, p1, p2, p3]).close().extrude(cut_depth, both=True)
 
-        # Circular array around X-axis: 3 instances, 120 deg apart.
         cuts = None
         for ang in (0.0, 120.0, 240.0):
             inst = base_cut if ang == 0.0 else base_cut.rotate((0, 0, 0), (1, 0, 0), ang)
             cuts = inst if cuts is None else cuts.union(inst)
         return cuts
+
+    def _build_cable3_cone_cut_solid(self):
+        if self.params.two_cable or (not self.params.cable3_cut_enabled) or self._robot_length <= 1e-6:
+            return None
+        try:
+            import cadquery as cq
+        except Exception:
+            return None
+
+        # a2 is Cut Size(%) ratio: controls cone-cut size.
+        a2 = max(0.0, min(0.20, float(self.cable3_cut_size_spin.value()) / 100.0))
+        # Placement follows the same centerline from a1 (Cut Position).
+        a1 = max(0.0, min(0.50, float(self.cable3_cut_pos_spin.value()) / 100.0))
+
+        # Build pp1/pp2, then extend their line toward negative x to hit y=0 at pp0.
+        pp1 = (0.0, a2 * self._tip_size)
+        pp2 = (self._robot_length, a2 * self._base_size)
+        pp3 = (self._robot_length, 0.0)
+        dy = pp2[1] - pp1[1]
+        if abs(dy) <= 1e-9:
+            pp0_x = -self._robot_length
+        else:
+            pp0_x = -pp1[1] * self._robot_length / dy
+        pp0 = (pp0_x, 0.0)
+
+        # Revolved cutter now uses a triangle profile: pp0-pp2-pp3.
+        base_cone = (
+            cq.Workplane("XY")
+            .polyline([pp0, pp2, pp3])
+            .close()
+            .revolve(360.0, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0))
+        )
+
+        p0 = (0.0, -(1.0 - a1) * self._tip_size * 0.5, 0.0)
+        p1 = (self._robot_length, -(1.0 - a1) * self._base_size * 0.5, 0.0)
+        theta_deg = math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
+
+        aligned = base_cone.rotate((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), theta_deg)
+        x3_rot = self._robot_length * math.cos(math.radians(theta_deg))
+        y3_rot = self._robot_length * math.sin(math.radians(theta_deg))
+        aligned = aligned.translate((p1[0] - x3_rot, p1[1] - y3_rot, p1[2]))
+
+        cuts = None
+        for ang in (0.0, 120.0, 240.0):
+            inst = aligned if ang == 0.0 else aligned.rotate((0, 0, 0), (1, 0, 0), ang)
+            cuts = inst if cuts is None else cuts.union(inst)
+        return cuts
+
+    def _build_cable3_cut_solid(self):
+        extrude_cuts = self._build_cable3_extrude_cut_solid()
+        cone_cuts = self._build_cable3_cone_cut_solid()
+        if extrude_cuts is None:
+            return cone_cuts
+        if cone_cuts is None:
+            return extrude_cuts
+        return extrude_cuts.union(cone_cuts)
 
     def update_scene(self) -> None:
         # Heavy 3D rebuild on demand
@@ -1498,7 +1546,6 @@ class MainWindow(QMainWindow):
             c_actor.GetProperty().SetEdgeColor(0.8, 0.7, 0.2)
             c_actor.GetProperty().BackfaceCullingOff()
             self.renderer.AddActor(c_actor)
-
 
         self.renderer.AddActor(self._axes_actor)
         if not self._camera_initialized:
@@ -2150,6 +2197,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
