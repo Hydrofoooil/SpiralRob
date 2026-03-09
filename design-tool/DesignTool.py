@@ -76,7 +76,7 @@ class Params:
     two_cable: bool = True
     cable3_cut_enabled: bool = True
     cable3_cut_pos: float = 25.0
-    cable3_cut_size: float = 18.0
+    cable3_cut_size: float = 14.0
 
 
 class ToggleSwitch(QWidget):
@@ -1955,6 +1955,21 @@ class MainWindow(QMainWindow):
             solid = wp if solid is None else solid.union(wp)
             if solid is None:
                 return
+
+            # Apply frustum holes for 3-cable unit
+            frustum = self._build_frustum_solid()
+            if frustum is not None:
+                holes = None
+                for ang in (0.0, 120.0, 240.0):
+                    inst = frustum if ang == 0.0 else frustum.rotate((0, 0, 0), (1, 0, 0), ang)
+                    holes = inst if holes is None else holes.union(inst)
+                if holes is not None:
+                    solid = solid.cut(holes)
+
+            # Apply additional 3-cable manufacturing cuts
+            cable3_cut = self._build_cable3_cut_solid()
+            if cable3_cut is not None:
+                solid = solid.cut(cable3_cut)
 
         # Transform: translate along x by -robot_length, then rotate about y by 90 deg
         solid = solid.translate((-self._robot_length, 0.0, 0.0))
