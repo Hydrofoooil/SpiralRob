@@ -685,8 +685,8 @@ class MainWindow(QMainWindow):
             "Stiffness",
             "",
             0.0,
-            1.0,
-            0.01,
+            100.0,
+            0.1,
             3,
             self.params.sim_stiffness,
             scale=10,
@@ -697,8 +697,8 @@ class MainWindow(QMainWindow):
             "Damping",
             "",
             0.0,
-            1.0,
-            0.01,
+            100.0,
+            0.1,
             3,
             self.params.sim_damping,
             scale=10,
@@ -1047,6 +1047,8 @@ class MainWindow(QMainWindow):
         self.params.cable3_cut_enabled = self.cable3_cut_check.isChecked()
         self.params.cable3_cut_pos = float(self.cable3_cut_pos_spin.value())
         self.params.cable3_cut_size = float(self.cable3_cut_size_spin.value())
+        self.params.sim_stiffness = float(self.sim_stiffness_spin.value())
+        self.params.sim_damping = float(self.sim_damping_spin.value())
 
         turns = max(0.1, self.params.theta_max_pi / 2.0)
         theta_vals, r_vals, rc_vals, units_primary, units_mirror, unit_count = _build_polar_units(
@@ -1888,6 +1890,8 @@ class MainWindow(QMainWindow):
             import cadquery as cq
         except Exception:
             return
+        self.params.sim_stiffness = float(self.sim_stiffness_spin.value())
+        self.params.sim_damping = float(self.sim_damping_spin.value())
         out_dir = os.path.join(os.path.dirname(__file__), "exports")
         os.makedirs(out_dir, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2043,6 +2047,8 @@ class MainWindow(QMainWindow):
                 robot_length=self._robot_length,
                 site_points=site_points,
                 cable_mode=3 if not self.params.two_cable else 2,
+                joint_stiffness=self.params.sim_stiffness,
+                joint_damping=self.params.sim_damping,
             )
         except Exception as exc:
             print(f"[Export XML] failed: {exc}")
