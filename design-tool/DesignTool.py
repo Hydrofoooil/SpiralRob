@@ -808,7 +808,7 @@ class MainWindow(QMainWindow):
             w.valueChanged.connect(self.schedule_update)
         self.elastic_check.toggled.connect(lambda _v: self.schedule_update())
 
-        self.update_2d()
+        self._apply_default_parameters(update_scene=False)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -930,6 +930,7 @@ class MainWindow(QMainWindow):
         box.setRange(vmin, vmax)
         box.setDecimals(decimals)
         box.setSingleStep(step)
+        box.setKeyboardTracking(False)
         box.setValue(value)
         box.setFixedWidth(self._param_spin_width)
 
@@ -966,6 +967,7 @@ class MainWindow(QMainWindow):
     ) -> Tuple[QSpinBox, QSlider, int]:
         box = QSpinBox()
         box.setRange(vmin, vmax)
+        box.setKeyboardTracking(False)
         box.setValue(value)
         box.setFixedWidth(self._param_spin_width)
 
@@ -991,7 +993,7 @@ class MainWindow(QMainWindow):
         return box, slider, row + 1
 
         
-    def reset_parameters(self) -> None:
+    def _apply_default_parameters(self, update_scene: bool = True) -> None:
         if hasattr(self, "_cone1_initialized"):
             delattr(self, "_cone1_initialized")
         if hasattr(self, "_cone2_initialized"):
@@ -1030,7 +1032,11 @@ class MainWindow(QMainWindow):
         self.cone1_spin.setValue(defaults.cone_angle1)
         self.cone1_slider.setValue(int(defaults.cone_angle1 * 10))
         self.update_2d()
-        self.update_scene()
+        if update_scene:
+            self.update_scene()
+
+    def reset_parameters(self) -> None:
+        self._apply_default_parameters(update_scene=True)
 
     def update_2d(self) -> None:
         self.params.a = float(self.a_spin.value())
@@ -1089,9 +1095,11 @@ class MainWindow(QMainWindow):
         self.extrusion_slider.blockSignals(True)
         self.extrusion_spin.setRange(min_extrusion, max_extrusion)
         self.extrusion_slider.setRange(int(min_extrusion * 10), int(max_extrusion * 10))
-        current_extrusion = default_extrusion
-        if current_extrusion < min_extrusion or current_extrusion > max_extrusion:
-            current_extrusion = max(min_extrusion, min(max_extrusion, current_extrusion))
+        if hasattr(self, "_extrusion_initialized"):
+            current_extrusion = float(self.extrusion_spin.value())
+        else:
+            current_extrusion = default_extrusion
+        current_extrusion = max(min_extrusion, min(max_extrusion, current_extrusion))
         self.extrusion_spin.setValue(current_extrusion)
         self.extrusion_slider.setValue(int(current_extrusion * 10))
         self._extrusion_initialized = True
@@ -1143,11 +1151,6 @@ class MainWindow(QMainWindow):
         self._elastic_poly_mirror = elastic_poly_mirror
         self._polys_all = polys_all
         self._thickness = thickness
-        if not hasattr(self, "_extrusion_initialized"):
-            self.params.extrusion = thickness
-            self.extrusion_spin.setValue(thickness)
-            self.extrusion_slider.setValue(int(thickness * 10))
-            self._extrusion_initialized = True
 
         self.taper_label.setText(f"Taper Angle: {self._taper_angle_deg:.2f}°")
         self.tip_label.setText(f"Tip Size: {tip_size:.2f} mm")
