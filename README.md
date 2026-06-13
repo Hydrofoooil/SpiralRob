@@ -1,3 +1,21 @@
+# SpiRob：基于螺旋的绳驱动连续体机器人
+
+![img](/home/maoting/github_repo/SpiralRob/assets/微信图片_20260614013147_290_31.jpg)
+
+# Demo
+
+## 自由度展示
+
+<video src="assets/9526db5b57d2561ed2bb14f524f04206.mp4" controls width="800"></video>
+
+## 自上方抓取
+
+<video src="assets/f60d8ddacf6bd0dd3aa59eea5b679a06.mp4" controls width="400"></video>
+
+## 自下方抓取
+
+<video src="assets/f35791782b6c41cc7f417259455922a4.mp4" controls width="400"></video>
+
 # 3D Model Generation
 
 OpenSpiRobs is a research toolkit for designing and simulating logarithmic‑spiral soft robots. It provides a GUI design tool for rapid geometry iteration, CAD export (STEP/STL), and MuJoCo XML generation, plus a real‑robot control stack (`real_deploy/`) driving cable‑driven tendons over RS485, with optional modules for fabrication and datasets.
@@ -30,9 +48,21 @@ OpenSpiRobs is a research toolkit for designing and simulating logarithmic‑spi
 
 ## 硬件配置
 
-- 三台电机已通过**同一个** USB-转-485 适配器挂在**同一条总线**上 (A-A、B-B 并联, 末端 120Ω 跳线)。
-- 三台电机的 485 从机地址分别为 **1 / 2 / 3**。**绳↔电机映射默认 `--addrs 1,3,2`**
-  (绳1→电机1, 绳2→电机3, 绳3→电机2); 接线不同就用 `--addrs` 改。
+- 三台电机已通过**同一个** USB-转-485 适配器挂在**同一条总线**上 (A-A、B-B 并联, 末端 120Ω 跳线)：
+
+  ![img](assets/微信图片_20260614022130_296_31.jpg)
+- 用12-24V的锂电池供电，经过分电板（此处使用RM电调中心板）分成3路给电机分别供电：
+
+  ![img](assets/微信图片_20260614013141_287_31.jpg)
+- 电机背部驱动板接线图：
+
+  ![img](/home/maoting/github_repo/SpiralRob/assets/微信图片_20260614022132_297_31.jpg)
+- 三台电机的 485 从机地址分别为 **1 / 2 / 3。**
+  电机物理编号：触手面相自己，左下角电机为1号，右下角电机为2号，中间电机为3号
+
+  **绳↔电机映射默认 `--addrs 1,3,2`**(绳1→电机1, 绳2→电机3, 绳3→电机2)
+
+  接线不同就用 `--addrs` 改。
 - 波特率为出厂默认 **38400** (若改过, 运行时加 `--baud`)。
 - Linux 下当前用户在 `dialout` 组 (本机已满足), 故无需 sudo 即可访问 `/dev/ttyUSB*`。
 
