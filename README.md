@@ -6,15 +6,29 @@
 
 ## 自由度展示
 
-<video src="assets/9526db5b57d2561ed2bb14f524f04206.mp4" controls width="800"></video>
+<div align="center">
+<video src="assets/9526db5b57d2561ed2bb14f524f04206.mp4" controls>
+</video>
+</div>
+
 
 ## 自上方抓取
 
-<video src="assets/f60d8ddacf6bd0dd3aa59eea5b679a06.mp4" controls width="400"></video>
+
+<div align="center">
+<video src="assets/f60d8ddacf6bd0dd3aa59eea5b679a06.mp4" controls>
+</video>
+</div>
+
 
 ## 自下方抓取
 
-<video src="assets/f35791782b6c41cc7f417259455922a4.mp4" controls width="400"></video>
+
+<div align="center">
+<video src="assets/f35791782b6c41cc7f417259455922a4.mp4" controls>
+</video>
+</div>
+
 
 # 3D Model Generation
 
