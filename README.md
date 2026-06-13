@@ -7,27 +7,31 @@
 ## 自由度展示
 
 <div align="center">
-<video src="assets/9526db5b57d2561ed2bb14f524f04206.mp4" controls>
+<video src="https://github.com/user-attachments/assets/2efcef01-1063-4c7b-bf3c-fe9c0b623603" controls>
 </video>
 </div>
-![▶️ 观看演示](assets/9526db5b57d2561ed2bb14f524f04206.mp4)
 
 ## 自上方抓取
 
 
 <div align="center">
-<video src="assets/f60d8ddacf6bd0dd3aa59eea5b679a06.mp4" controls>
+<video src="https://github.com/user-attachments/assets/cdf71881-4382-4eaa-a48a-863072fa315a" controls>
 </video>
 </div>
+
+
+
+
 
 
 ## 自下方抓取
 
 
 <div align="center">
-<video src="assets/f35791782b6c41cc7f417259455922a4.mp4" controls>
+<video src="https://github.com/user-attachments/assets/0468f2fd-48ad-4dc8-a2bc-5f1875038b54" controls>
 </video>
 </div>
+
 
 
 # 3D Model Generation
