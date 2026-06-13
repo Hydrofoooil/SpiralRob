@@ -1,6 +1,6 @@
 # SpiRob：基于螺旋的绳驱动连续体机器人
 
-![img](/home/maoting/github_repo/SpiralRob/assets/微信图片_20260614013147_290_31.jpg)
+![img](assets/微信图片_20260614013147_290_31.jpg)
 
 # Demo
 
