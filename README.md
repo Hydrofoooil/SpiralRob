@@ -13,26 +13,17 @@
 
 ## 自上方抓取
 
-
 <div align="center">
 <video src="https://github.com/user-attachments/assets/cdf71881-4382-4eaa-a48a-863072fa315a" controls>
 </video>
 </div>
 
-
-
-
-
-
 ## 自下方抓取
-
 
 <div align="center">
 <video src="https://github.com/user-attachments/assets/0468f2fd-48ad-4dc8-a2bc-5f1875038b54" controls>
 </video>
 </div>
-
-
 
 # 3D Model Generation
 
@@ -74,7 +65,7 @@ OpenSpiRobs is a research toolkit for designing and simulating logarithmic‑spi
   ![img](assets/微信图片_20260614013141_287_31.jpg)
 - 电机背部驱动板接线图：
 
-  ![img](/home/maoting/github_repo/SpiralRob/assets/微信图片_20260614022132_297_31.jpg)
+  ![img](assets/微信图片_20260614022132_297_31.jpg)
 - 三台电机的 485 从机地址分别为 **1 / 2 / 3。**
   电机物理编号：触手面相自己，左下角电机为1号，右下角电机为2号，中间电机为3号
 
